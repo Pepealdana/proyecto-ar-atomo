@@ -71,6 +71,7 @@ html, body {
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: background 0.3s, color 0.3s;
 }
 
 .pulse {
@@ -93,7 +94,7 @@ html, body {
   border-radius: 30px;
   font-size: 0.85rem;
   border: 1px solid rgba(255, 255, 255, 0.15);
-  transition: opacity 0.3s ease;
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 /* Tarjeta interactiva inferior */
@@ -156,7 +157,11 @@ html, body {
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.btn:active {
+  transform: scale(0.98);
 }
 
 .btn.primary {

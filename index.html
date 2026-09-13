@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AURA - Visor de Realidad Aumentada</title>
   
-  <!-- Librerías desde CDN -->
+  <!-- Librerías RA desde CDN -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
   
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 
@@ -33,19 +33,17 @@
       🔍 Apunta la cámara a una ficha didáctica
     </div>
 
-    <!-- Tarjeta Informativa e Interactiva Superior/Inferior -->
+    <!-- Tarjeta Informativa e Interactiva -->
     <div id="info-card" class="card hidden">
       <div class="card-header">
-        <h2 id="card-title">Átomo de Hidrógeno (H)</h2>
-        <span id="card-tag" class="tag">Química</span>
+        <h2 id="card-title">Cargando...</h2>
+        <span id="card-tag" class="tag">Ciencia</span>
       </div>
-      <p id="card-description">
-        El elemento más ligero y abundante del universo. Posee 1 protón en su núcleo y 1 electrón en órbita.
-      </p>
+      <p id="card-description">Apunta a un marcador para ver la información.</p>
       
-      <!-- Controles interactivos de la RA -->
+      <!-- Controles interactivos -->
       <div class="card-actions">
-        <button id="btn-toggle-anim" class="btn primary">⏸️ Pausar Órbita</button>
+        <button id="btn-toggle-anim" class="btn primary">⏸️ Pausar Animación</button>
         <button id="btn-audio" class="btn secondary">🔊 Explicación</button>
       </div>
     </div>
@@ -55,7 +53,7 @@
   <!-- Escena 3D + RA -->
   <a-scene 
     mindar-image="
-      imageTargetSrc: ./targets.mind; 
+      imageTargetSrc: ./assets/targets/targets.mind; 
       filterMinCF: 0.001; 
       filterBeta: 0.01; 
       missTolerance: 5; 
@@ -66,112 +64,39 @@
     device-orientation-permission-ui="enabled: false">
     
     <a-assets>
-      <a-asset-item id="nucleoModel" src="./modelos/nucleo.glb"></a-asset-item>
+      <a-asset-item id="nucleoModel" src="./assets/models/nucleo.glb"></a-asset-item>
+      <a-asset-item id="corazonModel" src="./assets/models/corazon.glb"></a-asset-item>
     </a-assets>
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <!-- PROYECTO 1: Átomo de Hidrógeno (Target Index 0) -->
+    <!-- TARGET 0: Átomo de Hidrógeno -->
     <a-entity id="target-hidrogeno" mindar-image-target="targetIndex: 0">
-      
-      <!-- Contenedor con escala reducida para evitar que desborde la pantalla -->
       <a-entity position="0 0 0" scale="0.3 0.3 0.3">
-        <!-- Luces para resaltar el modelo 3D -->
         <a-light type="directional" intensity="1.5" position="1 2 1"></a-light>
         <a-light type="ambient" intensity="0.5"></a-light>
 
-        <!-- Modelo 3D / Fallback Geométrico -->
         <a-gltf-model src="#nucleoModel" position="0 0 0"></a-gltf-model>
-
-        <!-- Órbita visual -->
         <a-ring color="#00f2fe" radius-inner="1.19" radius-outer="1.21" rotation="90 0 0"></a-ring>
 
-        <!-- Animación orbital del electrón -->
         <a-entity id="orbit-anim" animation="property: rotation; to: 0 360 0; loop: true; dur: 2500; easing: linear">
           <a-sphere position="1.2 0 0" radius="0.1" color="#ff007f" material="emissive: #ff007f; emissiveIntensity: 0.5"></a-sphere>
         </a-entity>
       </a-entity>
-
     </a-entity>
 
-    <!-- PROYECTO 2: Ejemplo preparado para ampliar a otro modelo (Target Index 1) -->
-    <a-entity id="target-proyecto2" mindar-image-target="targetIndex: 1">
-      <a-box position="0 0 0" scale="0.2 0.2 0.2" color="#4CC3D9" animation="property: rotation; to: 0 360 0; loop: true; dur: 4000"></a-box>
+    <!-- TARGET 1: Corazón / Biología -->
+    <a-entity id="target-corazon" mindar-image-target="targetIndex: 1">
+      <a-entity position="0 0 0" scale="0.015 0.015 0.015" animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear">
+        <a-light type="directional" intensity="1.8" position="0 2 1"></a-light>
+        <a-light type="ambient" intensity="0.6"></a-light>
+        <a-gltf-model src="#corazonModel" position="0 0 0"></a-gltf-model>
+      </a-entity>
     </a-entity>
 
   </a-scene>
 
-  <!-- Lógica de Interactividad y Audio -->
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const targetHidrogeno = document.querySelector("#target-hidrogeno");
-      const infoCard = document.querySelector("#info-card");
-      const scannerHint = document.querySelector("#scanner-hint");
-      const statusBadge = document.querySelector("#scan-status");
-      const orbitAnim = document.querySelector("#orbit-anim");
-      const btnToggleAnim = document.querySelector("#btn-toggle-anim");
-      const btnAudio = document.querySelector("#btn-audio");
-
-      let isRotating = true;
-
-      // Web Audio API para reproducir un 'bip' interactivo sin archivos externos
-      function playFeedbackSound(freq = 600, type = 'sine') {
-        try {
-          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.type = type;
-          osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-          gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-          osc.connect(gain);
-          gain.connect(audioCtx.destination);
-          osc.start();
-          osc.stop(audioCtx.currentTime + 0.3);
-        } catch (e) { console.log(e); }
-      }
-
-      // Evento: Tarjeta Detectada
-      targetHidrogeno.addEventListener("targetFound", () => {
-        playFeedbackSound(880, 'triangle');
-        infoCard.classList.remove("hidden");
-        scannerHint.classList.add("hidden");
-        statusBadge.textContent = "Detectado";
-        statusBadge.classList.remove("pulse");
-        statusBadge.style.background = "rgba(16, 185, 129, 0.2)";
-        statusBadge.style.color = "#34d399";
-      });
-
-      // Evento: Tarjeta Perdida
-      targetHidrogeno.addEventListener("targetLost", () => {
-        infoCard.classList.add("hidden");
-        scannerHint.classList.remove("hidden");
-        statusBadge.textContent = "Escaneando...";
-        statusBadge.classList.add("pulse");
-        statusBadge.style.background = "rgba(255, 255, 255, 0.15)";
-        statusBadge.style.color = "#ffffff";
-      });
-
-      // Control de Animación (Pausar/Girar)
-      btnToggleAnim.addEventListener("click", () => {
-        isRotating = !isRotating;
-        if (isRotating) {
-          orbitAnim.setAttribute("animation", "pause", false);
-          btnToggleAnim.textContent = "⏸️ Pausar Órbita";
-        } else {
-          orbitAnim.setAttribute("animation", "pause", true);
-          btnToggleAnim.textContent = "▶️ Reanudar";
-        }
-      });
-
-      // Narración por Voz Sintetizada (Web Speech API)
-      btnAudio.addEventListener("click", () => {
-        const text = "Átomo de Hidrógeno. Es el primer elemento de la tabla periódica, compuesto por un protón y un electrón.";
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = "es-ES";
-        window.speechSynthesis.speak(utterance);
-      });
-    });
-  </script>
+  <!-- Lógica principal de la aplicación -->
+  <script src="js/app.js"></script>
 </body>
 </html>
